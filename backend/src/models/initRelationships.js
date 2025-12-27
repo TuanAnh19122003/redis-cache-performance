@@ -1,15 +1,23 @@
 module.exports = (db) => {
     const { User, Category, Product } = db;
 
-    const fk = (name) => ({
-        foreignKey: { name, allowNull: false },
-        onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+    Category.hasMany(Product, {
+        foreignKey: 'categoryId',
+        as: 'products'
     });
 
-    User.hasMany(Product, { foreignKey: 'userId', as: 'products' });
-    Product.belongsTo(User, { ...fk('userId'), as: 'user' });
+    Product.belongsTo(Category, {
+        foreignKey: 'categoryId',
+        as: 'category'
+    });
 
-    Category.hasMany(Product, { foreignKey: 'categoryId', as: 'products' });
-    Product.belongsTo(Category, { ...fk('categoryId'), as: 'category' });
+    User.hasMany(Product, {
+        foreignKey: 'userId',
+        as: 'products'
+    });
+
+    Product.belongsTo(User, {
+        foreignKey: 'userId',
+        as: 'user'
+    });
 };
