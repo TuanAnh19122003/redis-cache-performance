@@ -1,4 +1,3 @@
-// middlewares/cache.middleware.js
 const redis = require('redis');
 const RequestLog = require('../models/requestlog.model');
 const Setting = require('../models/setting.model');
@@ -12,28 +11,24 @@ const cache = (keyPrefix) => async (req, res, next) => {
     try {
         // Lấy TTL từ Setting DB
         const ttlSetting = await Setting.findByPk('CACHE_TTL');
-        const ttl = ttlSetting ? parseInt(ttlSetting.value) : 60;
+        const ttl = ttlSetting ? parseInt(ttlSetting.value) : 60; // fallback 60s
 
         // Xác định key
         let key;
         if (req.params.id) {
-            // Single product
             key = `${keyPrefix}:${req.params.id}`;
         } else if (req.path.includes('advanced')) {
-            // Advanced API: include query string
             key = `${keyPrefix}:${req.originalUrl}`;
         } else {
-            // List API
             key = `${keyPrefix}:all`;
         }
 
-        // Check cache
+        // Kiểm tra cache
         const cachedData = await client.get(key);
         if (cachedData) {
             console.log(`Cache HIT: ${key}`);
             res.locals.isCached = true;
 
-            // Ghi log request
             await RequestLog.create({
                 endpoint: req.originalUrl,
                 response_time: 0,
@@ -53,15 +48,13 @@ const cache = (keyPrefix) => async (req, res, next) => {
         res.json = async (body) => {
             const duration = Date.now() - start;
 
-            // Ghi log request
             await RequestLog.create({
                 endpoint: req.originalUrl,
                 response_time: duration,
                 is_cached: res.locals.isCached
             });
 
-            // Lưu cache với TTL
-            await client.setEx(key, ttl, JSON.stringify(body));
+            await client.setEx(key, ttl, JSON.stringify(body)); // dùng TTL từ DB
 
             return originalJson(body);
         };
